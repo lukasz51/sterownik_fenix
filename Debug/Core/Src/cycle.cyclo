@@ -1,0 +1,4 @@
+../Core/Src/cycle.c:25:17:adc_filter	3
+../Core/Src/cycle.c:42:6:process_adc_temperatures	2
+../Core/Src/cycle.c:51:6:cycle	1
+../Core/Src/cycle.c:67:6:zone1_control	8

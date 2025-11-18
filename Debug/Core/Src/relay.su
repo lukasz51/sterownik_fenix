@@ -1,0 +1,6 @@
+../Core/Src/relay.c:7:6:relay1	16	static
+../Core/Src/relay.c:20:6:relay2	16	static
+../Core/Src/relay.c:33:6:relay3	16	static
+../Core/Src/relay.c:45:6:relay4	16	static
+../Core/Src/relay.c:58:6:relay5	16	static
+../Core/Src/relay.c:70:6:relay6	16	static
