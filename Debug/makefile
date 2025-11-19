@@ -60,8 +60,8 @@ all: main-build
 main-build: sterownik_plyta_glowna.elf secondary-outputs
 
 # Tool invocations
-sterownik_plyta_glowna.elf sterownik_plyta_glowna.map: $(OBJS) $(USER_OBJS) C:\Users\lukas\STM32CubeIDE\workspace_1.18.0\sterownik_plyta_glowna\STM32F412RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "sterownik_plyta_glowna.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\lukas\STM32CubeIDE\workspace_1.18.0\sterownik_plyta_glowna\STM32F412RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="sterownik_plyta_glowna.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+sterownik_plyta_glowna.elf sterownik_plyta_glowna.map: $(OBJS) $(USER_OBJS) C:\Users\lukas\Documents\GitHub\sterownik_fenix\STM32F412RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "sterownik_plyta_glowna.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\lukas\Documents\GitHub\sterownik_fenix\STM32F412RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="sterownik_plyta_glowna.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

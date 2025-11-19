@@ -7,12 +7,7 @@
 #include "nextion_com.h"
 #include "relay.h"
 
-#include <stdint.h>
-
-
-
-
-// Bufory dla czterech kanałów
+// Bufory filtrów
 static uint16_t adc_buffer[4][FILTER_SIZE];
 static uint32_t adc_sum[4] = {0};
 static uint8_t adc_index[4] = {0};
@@ -35,10 +30,10 @@ static uint16_t adc_filter(uint8_t ch, uint16_t new_sample)
     if (adc_filled[ch] < FILTER_SIZE)
         adc_filled[ch]++;
 
-    return (uint16_t)(adc_sum[ch] / adc_filled[ch]);
+    return adc_sum[ch] / adc_filled[ch];
 }
 
-// ---- Główna funkcja: filtr + przeliczenie temperatur ----
+// ---- Przeliczanie temperatur ----
 void process_adc_temperatures(void)
 {
     for (uint8_t i = 0; i < 4; i++)
@@ -48,45 +43,117 @@ void process_adc_temperatures(void)
     }
 }
 
-void cycle(void)
-{
-	process_adc_temperatures();
-	zone1_control();
+// -------------------------
+//      ZMIENNE CO
+// -------------------------
+uint8_t enable_zone1 = 1;
+int16_t set_temp1 = 600;      // 45.0°C
+int16_t hyst1 = 30;           // 3.0°C
+int16_t pump_off_temp1 = 300; // 30.0°C
 
+static uint8_t heating_on_1 = 0;
+
+// -------------------------
+//      ZMIENNE CWU
+// -------------------------
+uint8_t enable_cwu = 1;        // 1 = grzej CWU
+int16_t set_cwu = 400;         // temp CWU (40.0°C)
+int16_t hyst_cwu = 20;         // histereza CWU (2°C)
+static uint8_t heating_cwu = 0;
+
+// -------------------------
+//   OGRANICZENIE 70°C
+// -------------------------
+#define MAX_BOILER_TEMP 700    // 70.0°C
+#define MAX_BOILER_HYST 50     // 5°C
+static uint8_t boiler_cooldown = 0;  // blokada powrotu na CO/CWU OFF
+
+// -------------------------
+//     STEROWANIE CWU
+// -------------------------
+void cwu_control(void)
+{
+    int16_t boiler = temperature[0]; // czujnik za kotłem
+    int16_t cwu = temperature[1];    // czujnik bojlera
+
+    // --- kontrola przegrzania kotła ---
+    if (boiler > MAX_BOILER_TEMP)
+        boiler_cooldown = 1;      // wymuszone chłodzenie
+    else if (boiler < (MAX_BOILER_TEMP - MAX_BOILER_HYST))
+        boiler_cooldown = 0;
+
+
+    // --- logika grzania CWU ---
+    if (enable_cwu)
+    {
+        // start CWU
+        if (!heating_cwu && cwu <= (set_cwu - hyst_cwu))
+            heating_cwu = 1;
+
+        // stop CWU – tylko jeśli NIE ma przegrzania kotła
+        if (heating_cwu && !boiler_cooldown && cwu >= set_cwu)
+            heating_cwu = 0;
+    }
+    else
+    {
+        heating_cwu = 0;
+    }
+
+
+    // --- pompa CWU (relay3) działa gdy CWU grzeje LUB chłodzimy kocioł ---
+    if (heating_cwu || boiler_cooldown)
+        relay3(1);
+    else
+        relay3(0);
+
+
+    // --- sterowanie kotłem podczas CWU i chłodzenia ---
+    if (heating_cwu)
+    {
+        if (!boiler_cooldown)
+            relay1(1);       // normalne grzanie CWU
+        else
+            relay1(0);       // przerwa kotła – ale pompa CWU nadal pracuje
+    }
+    else if (boiler_cooldown)
+    {
+        // CWU dogrzane, ale temperatura kotła za wysoka
+        relay1(0);
+        relay3(1);           // pompa CWU chłodzi
+    }
 }
 
-// zmienne konfiguracyjne
-uint8_t enable_zone1 = 1;
-int16_t set_temp1 = 450;      // 50.0°C
-int16_t hyst1 = 30;           // 5.0°C
-int16_t pump_off_temp1 = 300; // 20.0°C (przykład)
 
-
-// stan grzania
-static uint8_t heating_on_1 = 0;
+// -------------------------
+//        STEROWANIE CO
+// -------------------------
 void zone1_control(void)
 {
     int16_t temp = temperature[0];
 
+    // CO wyłączone gdy CWU aktywne lub chłodzenie kotła
+    if (heating_cwu || boiler_cooldown)
+    {
+        relay2(0);     // pompa CO OFF
+        heating_on_1 = 0;
+        return;        // kocioł sterowany przez CWU
+    }
+
+    // Normalna logika CO
     if (enable_zone1)
     {
-        // --- Histereza tylko w dół ---
-        if (!heating_on_1 && temp <= (set_temp1 - hyst1)) {
-            heating_on_1 = 1;  // włącz grzanie
-        }
-        else if (heating_on_1 && temp >= set_temp1) {
-            heating_on_1 = 0;  // wyłącz grzanie
-        }
+        if (!heating_on_1 && temp <= (set_temp1 - hyst1))
+            heating_on_1 = 1;
 
-        // --- Sterowanie kotłem ---
-        relay1(heating_on_1);  // 1 = ON, 0 = OFF
+        else if (heating_on_1 && temp >= set_temp1)
+            heating_on_1 = 0;
 
-        // --- Sterowanie pompą ---
-        if (heating_on_1) {
-            relay2(1);  // pompa ON przy grzaniu
-        }
-        else {
-            // Pompa wyłącza się tylko, gdy temperatura poniżej progu
+        relay1(heating_on_1);
+
+        if (heating_on_1)
+            relay2(1);
+        else
+        {
             if (temp < pump_off_temp1)
                 relay2(0);
             else
@@ -95,9 +162,20 @@ void zone1_control(void)
     }
     else
     {
-        // Strefa nieaktywna — wszystko OFF
         relay1(0);
         relay2(0);
         heating_on_1 = 0;
     }
 }
+
+
+// -------------------------
+//       CYKL GŁÓWNY
+// -------------------------
+void cycle(void)
+{
+    process_adc_temperatures();
+    cwu_control();
+    zone1_control();
+}
+
