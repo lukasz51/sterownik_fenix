@@ -47,8 +47,8 @@ void process_adc_temperatures(void)
 //      ZMIENNE CO
 // -------------------------
 volatile uint8_t enable_zone1 = 0;
-int16_t set_temp1 = 600;      // 45.0°C
-int16_t hyst1 = 30;           // 3.0°C
+int16_t set_temp1 = 350;      // 45.0°C
+int16_t hyst1 = 20;           // 3.0°C
 int16_t pump_off_temp1 = 300; // 30.0°C
 
 static uint8_t heating_on_1 = 0;
@@ -57,7 +57,7 @@ static uint8_t heating_on_1 = 0;
 //      ZMIENNE CWU
 // -------------------------
 volatile uint8_t enable_cwu = 0;        // 1 = grzej CWU
-int16_t set_cwu = 400;         // temp CWU (40.0°C)
+int16_t set_cwu = 450;         // temp CWU (45.0°C)
 int16_t hyst_cwu = 20;         // histereza CWU (2°C)
 static uint8_t heating_cwu = 0;
 

@@ -90,13 +90,15 @@ void SendTemperatureNextion(void)
     if (HAL_UART_GetState(&huart1) == HAL_UART_STATE_READY) {
         HAL_StatusTypeDef st = HAL_UART_Transmit_DMA(&huart1, dma_buf[current_index], len);
         if (st == HAL_OK) {
-            // tylko wtedy przechodzimy do następnego indeksu — w przeciwnym razie spróbujemy ponownie następnym razem
+
+            // przechodzimy do następnego indeksu
             current_index++;
             if (current_index >= 4) current_index = 0;
+
         } else {
-            // HAL zwrócił BUSY lub ERROR — nie zmieniamy indexu, spróbujemy ponownie następnym wywołaniem
+            // HAL zwrócił BUSY lub ERROR — nie zmieniamy indexu
         }
-    } else {
-        // UART zajęty — nic nie robimy, spróbujemy ponownie przy kolejnym wywołaniu
     }
 }
+
+

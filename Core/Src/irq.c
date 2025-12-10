@@ -47,11 +47,14 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     {
         rx_len = Size;  // liczba odebranych bajtów
 
-        // Sprawdzenie, czy na końcu jest "ff"
-        if(rx_len >= 2 && rx_buf[rx_len-2] == 'f' && rx_buf[rx_len-1] == 'f')
+        // Sprawdzenie, czy na końcu jest "cwp"
+        if(rx_len >= 3 &&
+           rx_buf[rx_len-3] == 'C' &&
+           rx_buf[rx_len-2] == 'W' &&
+           rx_buf[rx_len-1] == 'P')
         {
-            // zakończ string przed "ff"
-            rx_buf[rx_len-2] = '\0';
+            // zakończ string przed "cwp"
+            rx_buf[rx_len-3] = '\0';
 
             // Obsługa komend
             if(strcmp((char*)rx_buf, "10") == 0)
@@ -77,7 +80,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buf, RX_BUF_SIZE);
     }
 }
-
 
 
 
