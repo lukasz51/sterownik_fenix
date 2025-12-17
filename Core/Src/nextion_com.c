@@ -5,10 +5,16 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include "nrf24l01p.h"
 #include <stdio.h>
 #include <string.h>
 
+
+#define RX_BUF_SIZE 20
+
+
+
+extern uint8_t rx_data[RX_BUF_SIZE];
 extern int temperature[4];
 
 // statyczne bufory dla DMA — jeden na każdą wiadomość (bezpieczne dla DMA)
@@ -73,10 +79,12 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 
 void SendTemperatureNextion(void)
 {
-    static uint8_t current_index = 0;
+
+	temperature[2] = (rx_data[0]*10 + rx_data[1]);
+				static uint8_t current_index = 0;
 
     // nazwy komponentów odpowiadające indexom
-    const char *names[4] = { "tTemp", "tTemp2", "tTemp3", "tTemp4" };
+    const char *names[4] = { "tTemp2", "tTemp3", "t_room", "tTemp4" };
 
     // przygotuj wiadomość do statycznego bufora
     int len = build_nextion_msg(names[current_index], temperature[current_index], dma_buf[current_index]);
@@ -100,5 +108,4 @@ void SendTemperatureNextion(void)
         }
     }
 }
-
 

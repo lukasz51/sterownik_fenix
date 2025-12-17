@@ -6,13 +6,18 @@
 #include <stdint.h>
 #include "nextion_com.h"
 #include "relay.h"
+#include "nrf24l01p.h"
+#include "math.h"
+
+uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0, 0, 0, 0, 0, 0, 0, 0};
+
 
 // Bufory filtrów
 static uint16_t adc_buffer[4][FILTER_SIZE];
 static uint32_t adc_sum[4] = {0};
 static uint8_t adc_index[4] = {0};
 static uint8_t adc_filled[4] = {0};
-
+extern volatile uint8_t rf_flag;
 uint32_t adc[8];
 int temperature[4];
 
@@ -47,6 +52,8 @@ void process_adc_temperatures(void)
 //      ZMIENNE CO
 // -------------------------
 volatile uint8_t enable_zone1 = 0;
+volatile uint8_t enable_zone2 = 0;
+volatile uint8_t enable_zone3 = 0;
 int16_t set_temp1 = 350;      // 45.0°C
 int16_t hyst1 = 20;           // 3.0°C
 int16_t pump_off_temp1 = 300; // 30.0°C
@@ -177,5 +184,26 @@ void cycle(void)
     process_adc_temperatures();
     cwu_control();
     zone1_control();
+
+
+	if (rf_flag == 1)
+	{
+
+		nrf24l01p_switch_rx_to_tx();
+		tx_data[0] = round(temperature[0] / 10); // temp co
+		tx_data[1] = round(temperature[1] / 10); // temp cwu
+		tx_data[2] = enable_cwu;
+		tx_data[3] = enable_zone1;
+		tx_data[4] = enable_zone2;
+		tx_data[5] = enable_zone3;
+		tx_data[6] = heating_on_1;
+		tx_data[7] = heating_cwu;
+
+		HAL_Delay(1);
+		nrf24l01p_tx_transmit(tx_data);
+		HAL_Delay(50);
+		nrf24l01p_switch_tx_to_rx();
+		rf_flag = 0;
+	}
 }
 

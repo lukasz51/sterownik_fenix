@@ -59,6 +59,13 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define MCU_LED_Pin GPIO_PIN_0
 #define MCU_LED_GPIO_Port GPIOC
+#define IRQ_Pin GPIO_PIN_7
+#define IRQ_GPIO_Port GPIOC
+#define IRQ_EXTI_IRQn EXTI9_5_IRQn
+#define CSN_Pin GPIO_PIN_9
+#define CSN_GPIO_Port GPIOC
+#define CE_Pin GPIO_PIN_8
+#define CE_GPIO_Port GPIOA
 #define OUT6_Pin GPIO_PIN_4
 #define OUT6_GPIO_Port GPIOB
 #define OUT5_Pin GPIO_PIN_5

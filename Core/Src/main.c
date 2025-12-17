@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -30,6 +31,7 @@
 #include "cycle.h"
 #include <string.h>
 #include <stdio.h>
+#include "nrf24l01p.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +53,8 @@
 
 /* USER CODE BEGIN PV */
 extern int temperature[4];
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,9 +102,12 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM14_Init();
   MX_USART1_UART_Init();
+  MX_SPI2_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 
   init();
+
 
   /* USER CODE END 2 */
 
@@ -111,7 +118,8 @@ int main(void)
 cycle();
 
 
-HAL_Delay(1000);
+
+
 
     /* USER CODE END WHILE */
 
