@@ -10,8 +10,9 @@
 #include "math.h"
 
 uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-
+extern uint8_t uart_tx_flag;
+uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH];
+extern uint8_t nrf_rx_flag;
 // Bufory filtrów
 static uint16_t adc_buffer[4][FILTER_SIZE];
 static uint32_t adc_sum[4] = {0};
@@ -205,5 +206,20 @@ void cycle(void)
 		nrf24l01p_switch_tx_to_rx();
 		rf_flag = 0;
 	}
+
+	if(uart_tx_flag == 1)
+	{
+		  SendTemperatureNextion();
+		  HAL_GPIO_TogglePin(MCU_LED_GPIO_Port, MCU_LED_Pin);
+		  uart_tx_flag = 0;
+	}
+
+	if(nrf_rx_flag==1)
+	{
+		nrf24l01p_rx_receive(rx_data);
+		nrf_rx_flag = 0;
+	}
+
+
 }
 

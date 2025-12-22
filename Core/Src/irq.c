@@ -12,7 +12,10 @@
 #define RX_BUF_SIZE 20
 
 
-uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH];
+
+uint8_t uart_tx_flag = 0;
+uint8_t nrf_rx_flag = 0;
+
 volatile uint8_t rf_flag;
 
 uint8_t uart_rx_byte;      // DMA odbiór po 1 bajcie
@@ -27,7 +30,11 @@ extern volatile uint8_t enable_cwu;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == NRF24L01P_IRQ_PIN_NUMBER)
-		nrf24l01p_rx_receive(rx_data);
+	{
+		nrf_rx_flag = 1;
+	}
+
+
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -35,8 +42,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (htim->Instance == TIM14)
 		{
-		  SendTemperatureNextion();
-		  HAL_GPIO_TogglePin(MCU_LED_GPIO_Port, MCU_LED_Pin);
+
+			uart_tx_flag = 1;
 
 		}
 

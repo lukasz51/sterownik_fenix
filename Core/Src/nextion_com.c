@@ -23,6 +23,11 @@ static uint8_t dma_buf[4][NEXTION_MSG_MAX];
 
 static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 {
+    // ❌ nie wysyłamy ujemnych temperatur
+    if (temp < 0) {
+        return -1;
+    }
+
     // budujemy: comp.txt="xx.xC" + 0xFF 0xFF 0xFF
     int i = 0;
 
@@ -33,16 +38,11 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
     for (int k = 0; k < (int)sizeof(suffix)-1 && i < NEXTION_MSG_MAX; k++)
         outbuf[i++] = suffix[k];
 
-    // temp: temp jest w dziesiątych (np. 245 -> 24.5)
-    int negative = 0;
-    if (temp < 0) { negative = 1; temp = -temp; }
-
+    // temp jest w dziesiątych (np. 245 -> 24.5)
     int integer = temp / 10;
     int frac = temp % 10;
 
-    if (negative && i < NEXTION_MSG_MAX) outbuf[i++] = '-';
-
-    // część całkowita -> zapis bez sprintf
+    // część całkowita
     char numbuf[8];
     int idx = 0;
     if (integer == 0) numbuf[idx++] = '0';
@@ -53,34 +53,42 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
             t /= 10;
         }
     }
-    // odwróć
-    for (int j = idx-1; j >= 0 && i < NEXTION_MSG_MAX; j--) outbuf[i++] = numbuf[j];
 
-    // kropka i część ułamkowa
+    for (int j = idx-1; j >= 0 && i < NEXTION_MSG_MAX; j--)
+        outbuf[i++] = numbuf[j];
+
+    // część ułamkowa
     if (i < NEXTION_MSG_MAX) outbuf[i++] = '.';
-    if (i < NEXTION_MSG_MAX) outbuf[i++] = '0' + (frac % 10);
+    if (i < NEXTION_MSG_MAX) outbuf[i++] = '0' + frac;
 
-    // 'C' i zamknięcie cudzysłowu
+    // 'C' i zamknięcie
     if (i < NEXTION_MSG_MAX) outbuf[i++] = 'C';
     if (i < NEXTION_MSG_MAX) outbuf[i++] = '"';
 
-    // trzy bajty końca Nextion
+    // terminator Nextion
     if (i + 3 <= NEXTION_MSG_MAX) {
         outbuf[i++] = 0xFF;
         outbuf[i++] = 0xFF;
         outbuf[i++] = 0xFF;
     } else {
-        // za mało miejsca (nie powinno się zdarzyć)
         return -1;
     }
 
-    return i; // długość komunikatu
+    return i;
 }
+
 
 void SendTemperatureNextion(void)
 {
+	if (rx_data[0] == 7 && rx_data[1] == 7)
+	{
+	    // wykryto pakiet 7,7
+	}
+	else
+	{
+		temperature[2] = (rx_data[0]*10 + rx_data[1]);
+	}
 
-	temperature[2] = (rx_data[0]*10 + rx_data[1]);
 				static uint8_t current_index = 0;
 
     // nazwy komponentów odpowiadające indexom
@@ -93,19 +101,10 @@ void SendTemperatureNextion(void)
         current_index = (current_index + 1) & 3;
         return;
     }
+        HAL_UART_Transmit_DMA(&huart1, dma_buf[current_index], len);
+        current_index++;
+        if (current_index >= 4) current_index = 0;
 
-    // sprawdź czy UART jest gotowy do nowej transmisji DMA
-    if (HAL_UART_GetState(&huart1) == HAL_UART_STATE_READY) {
-        HAL_StatusTypeDef st = HAL_UART_Transmit_DMA(&huart1, dma_buf[current_index], len);
-        if (st == HAL_OK) {
 
-            // przechodzimy do następnego indeksu
-            current_index++;
-            if (current_index >= 4) current_index = 0;
-
-        } else {
-            // HAL zwrócił BUSY lub ERROR — nie zmieniamy indexu
-        }
-    }
 }
 
