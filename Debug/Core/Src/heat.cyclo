@@ -1,0 +1,5 @@
+../Core/Src/heat.c:42:13:logic_cwu	6
+../Core/Src/heat.c:62:13:logic_circulation	5
+../Core/Src/heat.c:96:13:logic_pumps	4
+../Core/Src/heat.c:129:13:logic_boiler	21
+../Core/Src/heat.c:203:6:heat	1

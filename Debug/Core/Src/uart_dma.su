@@ -1,0 +1,8 @@
+../Core/Src/uart_dma.c:29:6:uart_tx_init	4	static
+../Core/Src/uart_dma.c:35:9:uart_tx_write	24	static,ignoring_inline_asm
+../Core/Src/uart_dma.c:62:13:uart_tx_start_dma	16	static
+../Core/Src/uart_dma.c:78:6:HAL_UART_TxCpltCallback	16	static
+../Core/Src/uart_dma.c:94:6:uart_rx_init	8	static
+../Core/Src/uart_dma.c:103:10:uart_rx_available	4	static
+../Core/Src/uart_dma.c:110:10:uart_rx_read	24	static
+../Core/Src/uart_dma.c:126:6:HAL_UART_IDLE_Callback	24	static

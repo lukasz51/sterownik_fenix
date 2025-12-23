@@ -1,0 +1,5 @@
+../Core/Src/heat.c:42:13:logic_cwu	8	static
+../Core/Src/heat.c:62:13:logic_circulation	8	static
+../Core/Src/heat.c:96:13:logic_pumps	8	static
+../Core/Src/heat.c:129:13:logic_boiler	8	static
+../Core/Src/heat.c:203:6:heat	8	static

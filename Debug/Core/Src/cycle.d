@@ -1,4 +1,5 @@
-Core/Src/cycle.o: ../Core/Src/cycle.c ../Core/Inc/main.h \
+Core/Src/cycle.o: ../Core/Src/cycle.c ../Core/Inc/cycle.h \
+ ../Core/Inc/nrf24l01p.h ../Core/Inc/spi.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -31,10 +32,12 @@ Core/Src/cycle.o: ../Core/Src/cycle.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/cycle.h ../Core/Inc/thermistor.h ../Core/Inc/nextion_com.h \
- ../Core/Inc/relay.h ../Core/Inc/main.h ../Core/Inc/adc.h \
- ../Core/Inc/dma.h ../Core/Inc/tim.h ../Core/Inc/usart.h \
- ../Core/Inc/gpio.h ../Core/Inc/nrf24l01p.h ../Core/Inc/spi.h
+ ../Core/Inc/heat.h ../Core/Inc/irq.h ../Core/Inc/main.h \
+ ../Core/Inc/thermistor.h ../Core/Inc/nextion_com.h \
+ ../Core/Inc/uart_cmd.h ../Core/Inc/nrf24l01p.h
+../Core/Inc/cycle.h:
+../Core/Inc/nrf24l01p.h:
+../Core/Inc/spi.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -68,15 +71,10 @@ Core/Src/cycle.o: ../Core/Src/cycle.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../Core/Inc/cycle.h:
+../Core/Inc/heat.h:
+../Core/Inc/irq.h:
+../Core/Inc/main.h:
 ../Core/Inc/thermistor.h:
 ../Core/Inc/nextion_com.h:
-../Core/Inc/relay.h:
-../Core/Inc/main.h:
-../Core/Inc/adc.h:
-../Core/Inc/dma.h:
-../Core/Inc/tim.h:
-../Core/Inc/usart.h:
-../Core/Inc/gpio.h:
+../Core/Inc/uart_cmd.h:
 ../Core/Inc/nrf24l01p.h:
-../Core/Inc/spi.h:

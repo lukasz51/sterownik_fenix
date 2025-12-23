@@ -1,0 +1,2 @@
+../Core/Src/uart_cmd.c:11:9:uart_cmd_push	24	static,ignoring_inline_asm
+../Core/Src/uart_cmd.c:39:9:uart_cmd_pop	24	static,ignoring_inline_asm

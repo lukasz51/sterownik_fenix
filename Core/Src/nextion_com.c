@@ -6,6 +6,7 @@
 #include "usart.h"
 #include "gpio.h"
 #include "nrf24l01p.h"
+#include "uart_dma.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -80,31 +81,45 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 
 void SendTemperatureNextion(void)
 {
-	if (rx_data[0] == 7 && rx_data[1] == 7)
-	{
-	    // wykryto pakiet 7,7
-	}
-	else
-	{
-		temperature[2] = (rx_data[0]*10 + rx_data[1]);
-	}
+    /* ===================== RX z NRF ===================== */
+    if (rx_data[0] == 7 && rx_data[1] == 7)
+    {
+        // pakiet synchronizacyjny – nic nie rób
+    }
+    else
+    {
+        temperature[2] = (rx_data[0] * 10) + rx_data[1];
+    }
 
-				static uint8_t current_index = 0;
+    /* ===================== ROUND ROBIN ===================== */
+    static uint8_t current_index = 0;
 
-    // nazwy komponentów odpowiadające indexom
-    const char *names[4] = { "tTemp2", "tTemp3", "t_room", "tTemp4" };
+    const char *names[4] = {
+        "tTemp2",
+        "tTemp3",
+        "t_room",
+        "tTemp4"
+    };
 
-    // przygotuj wiadomość do statycznego bufora
-    int len = build_nextion_msg(names[current_index], temperature[current_index], dma_buf[current_index]);
-    if (len <= 0) {
-        // błąd budowania - pomiń i przejdź dalej
-        current_index = (current_index + 1) & 3;
+    /* ===================== BUILD FRAME ===================== */
+    int len = build_nextion_msg(
+        names[current_index],
+        temperature[current_index],
+        dma_buf[current_index]
+    );
+
+    if (len <= 0)
+    {
+        current_index = (current_index + 1) & 0x03;
         return;
     }
-        HAL_UART_Transmit_DMA(&huart1, dma_buf[current_index], len);
-        current_index++;
-        if (current_index >= 4) current_index = 0;
 
+    /* ===================== TX BUFFER (DMA BACKGROUND) ===================== */
+    uart_tx_write(dma_buf[current_index], (uint16_t)len);
 
+    current_index++;
+    if (current_index >= 4)
+        current_index = 0;
 }
+
 
