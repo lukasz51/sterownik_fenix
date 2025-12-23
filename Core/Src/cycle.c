@@ -25,7 +25,9 @@ volatile uint8_t enable_zone1 = 0;
 volatile uint8_t enable_zone2 = 0;
 volatile uint8_t enable_zone3 = 0;
 volatile uint8_t enable_cwu   = 0;
-
+volatile uint8_t enable_room_thermostat_z1;
+volatile uint8_t enable_room_thermostat_z2;
+volatile uint8_t enable_room_thermostat_z3;
 volatile uint8_t enable_circulation = 1;
 
 uint8_t  boiler_cooldown_active = 0;
@@ -41,6 +43,13 @@ extern int set_cwu;
 extern int set_co1;
 extern int set_co2;
 extern int set_co3;
+uint8_t t_room1;
+uint8_t t_room2;
+uint8_t t_room3;
+uint8_t t_set1;
+uint8_t t_set2;
+uint8_t t_set3;
+
 /* =========================================================
  *                NRF
  * ========================================================= */
@@ -275,6 +284,50 @@ static void process_uart(void)
         enable_circulation = 0;
         return;
     }
+
+    /* =====================================================
+     * KOMENDY TERMOSTAT POKOJOWY
+     * ===================================================== */
+
+    /* KOMENDA: tonCWP → włączenie termostatu pokojowego */
+    if (!strcmp((char*)cmd, "t1onCWP"))
+    {
+    	enable_room_thermostat_z1 = 1;
+        return;
+    }
+
+    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
+    if (!strcmp((char*)cmd, "t1offCWP"))
+    {
+        enable_room_thermostat_z1 = 0;
+        return;
+    }
+
+    if (!strcmp((char*)cmd, "t2onCWP"))
+    {
+    	enable_room_thermostat_z2 = 1;
+        return;
+    }
+
+    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
+    if (!strcmp((char*)cmd, "t2offCWP"))
+    {
+        enable_room_thermostat_z2 = 0;
+        return;
+    }
+
+    if (!strcmp((char*)cmd, "t3onCWP"))
+    {
+    	enable_room_thermostat_z3 = 1;
+        return;
+    }
+
+    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
+    if (!strcmp((char*)cmd, "t3offCWP"))
+    {
+        enable_room_thermostat_z3 = 0;
+        return;
+    }
 }
 
 /* =========================================================
@@ -361,6 +414,15 @@ void cycle(void)
     if (nrf_rx_flag)
     {
         nrf24l01p_rx_receive(rx_data);
+        if (rx_data[0] == 7 && rx_data[1] == 7)
+        {
+
+        }
+        else {
+            t_room1 = rx_data[0];
+            t_set1 = rx_data[2];
+		}
+
         nrf_rx_flag = 0;
     }
 }

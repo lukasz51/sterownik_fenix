@@ -59,8 +59,8 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
         outbuf[i++] = numbuf[j];
 
     // część ułamkowa
-    if (i < NEXTION_MSG_MAX) outbuf[i++] = '.';
-    if (i < NEXTION_MSG_MAX) outbuf[i++] = '0' + frac;
+   // if (i < NEXTION_MSG_MAX) outbuf[i++] = '.';
+    //if (i < NEXTION_MSG_MAX) outbuf[i++] = '0' + frac;
 
     // 'C' i zamknięcie
     if (i < NEXTION_MSG_MAX) outbuf[i++] = 'C';
@@ -88,7 +88,7 @@ void SendTemperatureNextion(void)
     }
     else
     {
-        temperature[2] = (rx_data[0] * 10) + rx_data[1];
+        temperature[2] = (rx_data[0] * 10) ;
     }
 
     /* ===================== ROUND ROBIN ===================== */
