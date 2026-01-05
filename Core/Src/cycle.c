@@ -21,7 +21,7 @@ extern uint32_t adc[8];
 /* =========================================================
  *                DEFINICJE GLOBALNE (JEDYNE)
  * ========================================================= */
-volatile uint8_t enable_zone1 = 0;
+volatile uint8_t enable_zone1 = 0;;
 volatile uint8_t enable_zone2 = 0;
 volatile uint8_t enable_zone3 = 0;
 volatile uint8_t enable_cwu   = 0;
@@ -151,7 +151,7 @@ static void process_uart(void)
     if (!strncmp((char*)cmd, "cwu", 3))
     {
         int temp = atoi((char*)&cmd[3]);
-        set_cwu = temp;
+        set_cwu = temp*10;
         return;
     }
 
@@ -189,7 +189,7 @@ static void process_uart(void)
     if (!strncmp((char*)cmd, "z1", 2))
     {
         int temp = atoi((char*)&cmd[2]);
-        set_co1 = temp;
+        set_co1 = temp*10;
         return;
     }
 
@@ -227,7 +227,7 @@ static void process_uart(void)
     if (!strncmp((char*)cmd, "z2", 2))
     {
         int temp = atoi((char*)&cmd[2]);
-        set_co2 = temp;
+        set_co2 = temp*10;
         return;
     }
 
@@ -263,7 +263,7 @@ static void process_uart(void)
     if (!strncmp((char*)cmd, "z3", 2))
     {
         int temp = atoi((char*)&cmd[2]);
-        set_co3 = temp;
+        set_co3 = temp*10;
         return;
     }
 
