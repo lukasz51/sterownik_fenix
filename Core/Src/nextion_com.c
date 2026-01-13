@@ -12,15 +12,17 @@
 
 
 #define RX_BUF_SIZE 20
-
+int16_t t_room_nrf  = 0;   // ×10
+int16_t t_room2_nrf = 0;   // placeholder
+int16_t t_room3_nrf = 0;   // placeholder
 
 
 extern uint8_t rx_data[RX_BUF_SIZE];
 extern int temperature[4];
 
 // statyczne bufory dla DMA — jeden na każdą wiadomość (bezpieczne dla DMA)
-#define NEXTION_MSG_MAX 32
-static uint8_t dma_buf[4][NEXTION_MSG_MAX];
+#define NEXTION_MSG_MAX 64
+static uint8_t dma_buf[7][NEXTION_MSG_MAX];
 
 static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 {
@@ -77,39 +79,60 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
     return i;
 }
 
-
 void SendTemperatureNextion(void)
 {
     /* ===================== RX z NRF ===================== */
     if (rx_data[0] == 7 && rx_data[1] == 7)
     {
-        // pakiet synchronizacyjny – nic nie rób
+        /* pakiet synchronizacyjny – nic nie rób */
     }
     else
     {
-        temperature[2] = (rx_data[0] * 10) ;
+        /* t_room z NRF (×10) */
+        t_room_nrf = rx_data[0] * 10;
     }
 
     /* ===================== ROUND ROBIN ===================== */
     static uint8_t current_index = 0;
 
-    const char *names[4] = {
+    const char *names[7] = {
         "tTemp2",
         "tTemp3",
+        "tTemp4",
+        "tTemp5",
         "t_room",
-        "tTemp4"
+        "t_room2",
+        "t_room3"
     };
+
+    int temp_to_send = 0;
+
+    switch (current_index)
+    {
+        /* ---- temperatury systemowe ---- */
+        case 0: temp_to_send = temperature[0]; break;
+        case 1: temp_to_send = temperature[1]; break;
+        case 2: temp_to_send = temperature[2]; break;
+        case 3: temp_to_send = temperature[3]; break;
+
+        /* ---- temperatury pokojowe (NRF) ---- */
+        case 4: temp_to_send = t_room_nrf;  break;
+        case 5: temp_to_send = t_room2_nrf; break;   // przyszłość
+        case 6: temp_to_send = t_room3_nrf; break;   // przyszłość
+    }
 
     /* ===================== BUILD FRAME ===================== */
     int len = build_nextion_msg(
         names[current_index],
-        temperature[current_index],
+        temp_to_send,
         dma_buf[current_index]
     );
 
     if (len <= 0)
     {
-        current_index = (current_index + 1) & 0x03;
+        current_index++;
+        if (current_index >= 7)
+            current_index = 0;
         return;
     }
 
@@ -117,8 +140,9 @@ void SendTemperatureNextion(void)
     uart_tx_write(dma_buf[current_index], (uint16_t)len);
 
     current_index++;
-    if (current_index >= 4)
+    if (current_index >= 7)
         current_index = 0;
 }
+
 
 

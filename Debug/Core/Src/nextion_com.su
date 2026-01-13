@@ -1,2 +1,2 @@
-../Core/Src/nextion_com.c:25:12:build_nextion_msg	72	static
-../Core/Src/nextion_com.c:81:6:SendTemperatureNextion	40	static
+../Core/Src/nextion_com.c:27:12:build_nextion_msg	72	static
+../Core/Src/nextion_com.c:82:6:SendTemperatureNextion	56	static
