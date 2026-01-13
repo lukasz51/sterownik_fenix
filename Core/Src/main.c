@@ -119,10 +119,7 @@ int main(void)
   {
 
 
-cycle();
-
-
-
+	  cycle();
 
 
     /* USER CODE END WHILE */
