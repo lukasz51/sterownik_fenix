@@ -28,7 +28,7 @@ volatile uint8_t enable_cwu   = 0;
 volatile uint8_t enable_room_thermostat_z1;
 volatile uint8_t enable_room_thermostat_z2;
 volatile uint8_t enable_room_thermostat_z3;
-volatile uint8_t enable_circulation = 1;
+volatile uint8_t enable_circulation = 0;
 
 uint8_t  boiler_cooldown_active = 0;
 uint32_t boiler_cooldown_timer  = 0;
@@ -272,14 +272,14 @@ static void process_uart(void)
      * ===================================================== */
 
     /* KOMENDA: conCWP → włączenie cyrkulacji */
-    if (!strcmp((char*)cmd, "conCWP"))
+    if (!strcmp((char*)cmd, "coonCWP"))
     {
         enable_circulation = 1;
         return;
     }
 
     /* KOMENDA: coffCWP → wyłączenie cyrkulacji */
-    if (!strcmp((char*)cmd, "coffCWP"))
+    if (!strcmp((char*)cmd, "cooffCWP"))
     {
         enable_circulation = 0;
         return;

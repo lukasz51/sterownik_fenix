@@ -4,8 +4,13 @@
 #include "usart.h"
 #include "nrf24l01p.h"
 #include "uart_cmd.h"
+
 extern uint8_t  zone_cooldown_active[4];
 extern uint32_t zone_cooldown_timer[4];
+
+/* <<< TIM11: flaga 10 s dla cyrkulacji >>> */
+volatile uint8_t circulation_tick_10s = 0;
+
 /* =========================================================
  *                SYSTEM TICK (1 ms)
  * ========================================================= */
@@ -46,16 +51,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         sys_ms++;
     }
 
+    /* ---- CO cooldown (1 s) ---- */
     if (htim->Instance == TIM6)
     {
         if (zone_cooldown_active[1]) zone_cooldown_timer[1]++;
         if (zone_cooldown_active[2]) zone_cooldown_timer[2]++;
         if (zone_cooldown_active[3]) zone_cooldown_timer[3]++;
-
     }
 
-
-
+    /* <<< TIM11: cyrkulacja tick co 10 s >>> */
+    if (htim->Instance == TIM11)
+    {
+        circulation_tick_10s = 1;
+    }
 
     /* ---- Nextion refresh ---- */
     if (htim->Instance == TIM14)

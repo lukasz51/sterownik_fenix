@@ -8,6 +8,9 @@
 #define BOILER_COOLDOWN_TIME 60   // s
 #define ROOM_HYST            1
 
+#define CIRCULATION_MIN_TEMP_ON   360   // 36.0°C
+#define CIRCULATION_MIN_TEMP_OFF  340   // 34.0°C
+
 /* =========================================================
  *                NASTAWY CO (×10)
  * ========================================================= */
@@ -51,6 +54,21 @@ static boiler_mode_t prev_boiler_mode = BOILER_IDLE;
  * ========================================================= */
 uint8_t  zone_cooldown_active[4] = {0};
 uint32_t zone_cooldown_timer[4]  = {0};
+
+/* =========================================================
+ *                CYRKULACJA CWU
+ * ========================================================= */
+extern volatile uint8_t enable_circulation;
+extern volatile uint8_t circulation_tick_10s;
+
+/* czasy w tickach 10 s */
+uint32_t circulation_on_time  = 12;   // 2 min
+uint32_t circulation_off_time = 90;   // 15 min
+
+static uint8_t  circulation_state       = 0; // 0=OFF, 1=ON
+static uint32_t circulation_timer       = 0;
+static uint8_t  circulation_temp_ok     = 0;
+static uint8_t  circulation_prev_enable = 0;
 
 /* =========================================================
  *                TERMOSTATY
@@ -121,6 +139,68 @@ static void logic_cwu(void)
 }
 
 /* =========================================================
+ *                CYRKULACJA CWU
+ * ========================================================= */
+static void logic_circulation(void)
+{
+    /* --- MASTER OFF: absolutna blokada --- */
+    if (!enable_circulation)
+    {
+        circulation_prev_enable = 0;
+        circulation_state = 0;
+        circulation_timer = 0;
+        relay6(0);
+        return;
+    }
+
+    /* --- histereza temperaturowa --- */
+    if (!circulation_temp_ok && temperature[1] >= CIRCULATION_MIN_TEMP_ON)
+        circulation_temp_ok = 1;
+    else if (circulation_temp_ok && temperature[1] <= CIRCULATION_MIN_TEMP_OFF)
+        circulation_temp_ok = 0;
+
+    if (!circulation_temp_ok)
+    {
+        circulation_state = 0;
+        circulation_timer = 0;
+        relay6(0);
+        return;
+    }
+
+    /* --- start natychmiast po WŁĄCZENIU --- */
+    if (!circulation_prev_enable)
+    {
+        circulation_state = 1;
+        circulation_timer = 0;
+        circulation_prev_enable = 1;
+        relay6(1);
+        return;
+    }
+
+    /* --- FSM czasowy (tick = 10 s) --- */
+    circulation_timer++;
+
+    if (circulation_state)
+    {
+        if (circulation_timer >= circulation_on_time)
+        {
+            circulation_state = 0;
+            circulation_timer = 0;
+        }
+    }
+    else
+    {
+        if (circulation_timer >= circulation_off_time)
+        {
+            circulation_state = 1;
+            circulation_timer = 0;
+        }
+    }
+
+    relay6(circulation_state);
+}
+
+/* =========================================================
  *                POMPY + COOLDOWN
  * ========================================================= */
 static void logic_pumps(void)
@@ -133,7 +213,6 @@ static void logic_pumps(void)
         return;
     }
 
-    /* --- STREFA 1 --- */
     if (zone_cooldown_active[1] &&
         zone_cooldown_timer[1] >= BOILER_COOLDOWN_TIME)
     {
@@ -141,12 +220,8 @@ static void logic_pumps(void)
         zone_cooldown_timer[1]  = 0;
     }
 
-    relay2(
-        (enable_zone1 && boiler_mode == BOILER_CO1) ||
-        zone_cooldown_active[1]
-    );
+    relay2((enable_zone1 && boiler_mode == BOILER_CO1) || zone_cooldown_active[1]);
 
-    /* --- STREFA 2 --- */
     if (zone_cooldown_active[2] &&
         zone_cooldown_timer[2] >= BOILER_COOLDOWN_TIME)
     {
@@ -154,12 +229,8 @@ static void logic_pumps(void)
         zone_cooldown_timer[2]  = 0;
     }
 
-    relay4(
-        (enable_zone2 && boiler_mode == BOILER_CO2) ||
-        zone_cooldown_active[2]
-    );
+    relay4((enable_zone2 && boiler_mode == BOILER_CO2) || zone_cooldown_active[2]);
 
-    /* --- STREFA 3 --- */
     if (zone_cooldown_active[3] &&
         zone_cooldown_timer[3] >= BOILER_COOLDOWN_TIME)
     {
@@ -167,10 +238,7 @@ static void logic_pumps(void)
         zone_cooldown_timer[3]  = 0;
     }
 
-    relay5(
-        (enable_zone3 && boiler_mode == BOILER_CO3) ||
-        zone_cooldown_active[3]
-    );
+    relay5((enable_zone3 && boiler_mode == BOILER_CO3) || zone_cooldown_active[3]);
 }
 
 /* =========================================================
@@ -180,7 +248,6 @@ static void logic_boiler(void)
 {
     prev_boiler_mode = boiler_mode;
 
-    /* ===== CWU ===== */
     if (heating_cwu)
     {
         boiler_mode = BOILER_CWU;
@@ -194,7 +261,6 @@ static void logic_boiler(void)
         return;
     }
 
-    /* ===== STREFA 1 ===== */
     if (enable_zone1 && room_thermostat_allows(1))
     {
         boiler_mode = BOILER_CO1;
@@ -208,7 +274,6 @@ static void logic_boiler(void)
         return;
     }
 
-    /* ===== STREFA 2 ===== */
     if (enable_zone2 && room_thermostat_allows(2))
     {
         boiler_mode = BOILER_CO2;
@@ -222,7 +287,6 @@ static void logic_boiler(void)
         return;
     }
 
-    /* ===== STREFA 3 ===== */
     if (enable_zone3 && room_thermostat_allows(3))
     {
         boiler_mode = BOILER_CO3;
@@ -236,7 +300,6 @@ static void logic_boiler(void)
         return;
     }
 
-    /* ===== WYJŚCIE – START COOLDOWNU ===== */
     if (prev_boiler_mode >= BOILER_CO1 && prev_boiler_mode <= BOILER_CO3)
         start_zone_cooldown(prev_boiler_mode - BOILER_CO1 + 1);
 
@@ -253,4 +316,10 @@ void heat(void)
     logic_cwu();
     logic_boiler();
     logic_pumps();
+
+    if (circulation_tick_10s)
+    {
+        circulation_tick_10s = 0;
+        logic_circulation();
+    }
 }

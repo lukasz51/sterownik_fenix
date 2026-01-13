@@ -18,6 +18,7 @@ void init(void)
 	HAL_TIM_Base_Start_IT(&htim7);
 	HAL_TIM_Base_Start_IT(&htim13);
 	HAL_TIM_Base_Start_IT(&htim14);
+	HAL_TIM_Base_Start_IT(&htim11);
     HAL_ADC_Start(&hadc1);
 	HAL_ADC_Start_DMA(&hadc1, adc, 8);
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buf, RX_BUF_SIZE);

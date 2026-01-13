@@ -41,7 +41,6 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 
     // temp jest w dziesiątych (np. 245 -> 24.5)
     int integer = temp / 10;
-    int frac = temp % 10;
 
     // część całkowita
     char numbuf[8];
