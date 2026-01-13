@@ -97,7 +97,7 @@ void nrf24l01p_auto_retransmit_delay(delay us);
 void nrf24l01p_set_tx_address(const uint8_t *addr, uint8_t len);
 
 void nrf24l01p_set_rx_address_p0(const uint8_t *addr, uint8_t len);
-
+void nrf24l01p_set_address(const uint8_t *addr);
 /* nRF24L01+ Commands */
 #define NRF24L01P_CMD_R_REGISTER                  0b00000000
 #define NRF24L01P_CMD_W_REGISTER                  0b00100000

@@ -21,7 +21,7 @@ extern uint32_t adc[8];
 /* =========================================================
  *                DEFINICJE GLOBALNE (JEDYNE)
  * ========================================================= */
-volatile uint8_t enable_zone1 = 0;;
+volatile uint8_t enable_zone1 = 0;
 volatile uint8_t enable_zone2 = 0;
 volatile uint8_t enable_zone3 = 0;
 volatile uint8_t enable_cwu   = 0;
@@ -43,6 +43,7 @@ extern int set_cwu;
 extern int set_co1;
 extern int set_co2;
 extern int set_co3;
+
 uint8_t t_room1;
 uint8_t t_room2;
 uint8_t t_room3;
@@ -53,8 +54,20 @@ uint8_t t_set3;
 /* =========================================================
  *                NRF
  * ========================================================= */
+#define NRF_TH_COUNT 3
+
 uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH];
 uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH];
+
+static const uint8_t NRF_ADDR_LIST[NRF_TH_COUNT][5] =
+{
+    {0xE7,0xE7,0xE7,0xE7,0xE7}, // termostat 1
+    {0xE7,0xE7,0xE7,0xE7,0x02}, // termostat 2
+    {0xE7,0xE7,0xE7,0xE7,0x03}  // termostat 3
+};
+
+static uint8_t current_thermostat = 0;   // DO KOGO TX
+static uint8_t rx_thermostat      = 0;   // OD KOGO RX
 
 /* =========================================================
  *                ADC FILTER
@@ -95,14 +108,6 @@ static void process_uart(void)
 
     cmd[len] = 0;
 
-    /* =====================================================
-     * KOMENDA: alloffCWP
-     * DZIAŁANIE:
-     *  - wyłącza wszystkie strefy
-     *  - wyłącza CWU
-     *  - wyłącza cyrkulację
-     *  - uruchamia cooldown kotła
-     * ===================================================== */
     if (!strcmp((char*)cmd, "alloffCWP"))
     {
         enable_zone1 = 0;
@@ -116,218 +121,72 @@ static void process_uart(void)
         return;
     }
 
-    /* =====================================================
-     * KOMENDY CWU
-     * ===================================================== */
-
-    /* KOMENDA: cwuonCWP → włączenie CWU */
-    if (!strcmp((char*)cmd, "cwuonCWP"))
-    {
-        enable_cwu = 1;
-        return;
-    }
-
-    /* KOMENDA: cwuoffCWP → wyłączenie CWU */
+    if (!strcmp((char*)cmd, "cwuonCWP"))  { enable_cwu = 1; return; }
     if (!strcmp((char*)cmd, "cwuoffCWP"))
     {
         enable_cwu = 0;
-
-        if((enable_zone1 == 1) || (enable_zone2 == 1) || (enable_zone3 == 1))
-        {
-
-       	}
-        else
+        if (!(enable_zone1 || enable_zone2 || enable_zone3))
         {
             boiler_cooldown_active = 1;
             boiler_cooldown_timer  = 0;
         }
-
         return;
     }
 
-    /* KOMENDA: cwuxxCWP → ustawienie temperatury CWU
-     * PRZYKŁAD: cwu30CWP
-     */
     if (!strncmp((char*)cmd, "cwu", 3))
     {
-        int temp = atoi((char*)&cmd[3]);
-        set_cwu = temp*10;
+        set_cwu = atoi((char*)&cmd[3]) * 10;
         return;
     }
 
-    /* =====================================================
-     * KOMENDY STREFA 1
-     * ===================================================== */
-
-    /* KOMENDA: z1onCWP → włączenie strefy 1 */
-    if (!strcmp((char*)cmd, "z1onCWP"))
-    {
-        enable_zone1 = 1;
-
-        return;
-    }
-    /* KOMENDA: z1offCWP → wyłączenie strefy 1 */
+    if (!strcmp((char*)cmd, "z1onCWP"))  { enable_zone1 = 1; return; }
     if (!strcmp((char*)cmd, "z1offCWP"))
     {
         enable_zone1 = 0;
-
-        if((enable_cwu == 1) || (enable_zone2 == 1) || (enable_zone3 == 1))
-        {
-
-       	}
-        else
+        if (!(enable_cwu || enable_zone2 || enable_zone3))
         {
             boiler_cooldown_active = 1;
             boiler_cooldown_timer  = 0;
         }
         return;
     }
+    if (!strncmp((char*)cmd, "z1", 2)) { set_co1 = atoi((char*)&cmd[2]) * 10; return; }
 
-    /* KOMENDA: z1xxCWP → ustawienie temperatury strefy 1
-     * PRZYKŁAD: z125CWP
-     */
-    if (!strncmp((char*)cmd, "z1", 2))
-    {
-        int temp = atoi((char*)&cmd[2]);
-        set_co1 = temp*10;
-        return;
-    }
-
-    /* =====================================================
-     * KOMENDY STREFA 2
-     * ===================================================== */
-
-    /* KOMENDA: z2onCWP → włączenie strefy 2 */
-    if (!strcmp((char*)cmd, "z2onCWP"))
-    {
-        enable_zone2 = 1;
-        return;
-    }
-
-    /* KOMENDA: z2offCWP → wyłączenie strefy 2 */
+    if (!strcmp((char*)cmd, "z2onCWP"))  { enable_zone2 = 1; return; }
     if (!strcmp((char*)cmd, "z2offCWP"))
     {
         enable_zone2 = 0;
-        if((enable_zone1 == 1) || (enable_cwu == 1) || (enable_zone3 == 1))
-        {
-
-       	}
-        else
+        if (!(enable_zone1 || enable_cwu || enable_zone3))
         {
             boiler_cooldown_active = 1;
             boiler_cooldown_timer  = 0;
         }
-
         return;
     }
+    if (!strncmp((char*)cmd, "z2", 2)) { set_co2 = atoi((char*)&cmd[2]) * 10; return; }
 
-    /* KOMENDA: z2xxCWP → ustawienie temperatury strefy 2
-     * PRZYKŁAD: z228CWP
-     */
-    if (!strncmp((char*)cmd, "z2", 2))
-    {
-        int temp = atoi((char*)&cmd[2]);
-        set_co2 = temp*10;
-        return;
-    }
-
-    /* =====================================================
-     * KOMENDY STREFA 3
-     * ===================================================== */
-
-    /* KOMENDA: z3onCWP → włączenie strefy 3 */
-    if (!strcmp((char*)cmd, "z3onCWP"))
-    {
-        enable_zone3 = 1;
-        return;
-    }
-    /* KOMENDA: z3offCWP → wyłączenie strefy 3 */
+    if (!strcmp((char*)cmd, "z3onCWP"))  { enable_zone3 = 1; return; }
     if (!strcmp((char*)cmd, "z3offCWP"))
     {
         enable_zone3 = 0;
-        if((enable_zone1 == 1) || (enable_zone2 == 1) || (enable_cwu == 1))
-        {
-
-       	}
-        else
+        if (!(enable_zone1 || enable_zone2 || enable_cwu))
         {
             boiler_cooldown_active = 1;
             boiler_cooldown_timer  = 0;
         }
-
         return;
     }
-    /* KOMENDA: z3xxCWP → ustawienie temperatury strefy 3
-     * PRZYKŁAD: z320CWP
-     */
-    if (!strncmp((char*)cmd, "z3", 2))
-    {
-        int temp = atoi((char*)&cmd[2]);
-        set_co3 = temp*10;
-        return;
-    }
+    if (!strncmp((char*)cmd, "z3", 2)) { set_co3 = atoi((char*)&cmd[2]) * 10; return; }
 
-    /* =====================================================
-     * KOMENDY CYRKULACJA
-     * ===================================================== */
+    if (!strcmp((char*)cmd, "coonCWP"))  { enable_circulation = 1; return; }
+    if (!strcmp((char*)cmd, "cooffCWP")) { enable_circulation = 0; return; }
 
-    /* KOMENDA: conCWP → włączenie cyrkulacji */
-    if (!strcmp((char*)cmd, "coonCWP"))
-    {
-        enable_circulation = 1;
-        return;
-    }
-
-    /* KOMENDA: coffCWP → wyłączenie cyrkulacji */
-    if (!strcmp((char*)cmd, "cooffCWP"))
-    {
-        enable_circulation = 0;
-        return;
-    }
-
-    /* =====================================================
-     * KOMENDY TERMOSTAT POKOJOWY
-     * ===================================================== */
-
-    /* KOMENDA: tonCWP → włączenie termostatu pokojowego */
-    if (!strcmp((char*)cmd, "t1onCWP"))
-    {
-    	enable_room_thermostat_z1 = 1;
-        return;
-    }
-
-    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
-    if (!strcmp((char*)cmd, "t1offCWP"))
-    {
-        enable_room_thermostat_z1 = 0;
-        return;
-    }
-
-    if (!strcmp((char*)cmd, "t2onCWP"))
-    {
-    	enable_room_thermostat_z2 = 1;
-        return;
-    }
-
-    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
-    if (!strcmp((char*)cmd, "t2offCWP"))
-    {
-        enable_room_thermostat_z2 = 0;
-        return;
-    }
-
-    if (!strcmp((char*)cmd, "t3onCWP"))
-    {
-    	enable_room_thermostat_z3 = 1;
-        return;
-    }
-
-    /* KOMENDA: toffCWP → wyłączenie termostatu pokojowego */
-    if (!strcmp((char*)cmd, "t3offCWP"))
-    {
-        enable_room_thermostat_z3 = 0;
-        return;
-    }
+    if (!strcmp((char*)cmd, "t1onCWP"))  { enable_room_thermostat_z1 = 1; return; }
+    if (!strcmp((char*)cmd, "t1offCWP")) { enable_room_thermostat_z1 = 0; return; }
+    if (!strcmp((char*)cmd, "t2onCWP"))  { enable_room_thermostat_z2 = 1; return; }
+    if (!strcmp((char*)cmd, "t2offCWP")) { enable_room_thermostat_z2 = 0; return; }
+    if (!strcmp((char*)cmd, "t3onCWP"))  { enable_room_thermostat_z3 = 1; return; }
+    if (!strcmp((char*)cmd, "t3offCWP")) { enable_room_thermostat_z3 = 0; return; }
 }
 
 /* =========================================================
@@ -340,7 +199,6 @@ static void process_timers(void)
     if ((sys_ms - last_sec) >= 1000)
     {
         last_sec = sys_ms;
-
         if (boiler_cooldown_active)
             boiler_cooldown_timer++;
     }
@@ -367,6 +225,10 @@ static void nrf_fsm(void)
             if (rf_flag)
             {
                 rf_flag = 0;
+
+                /* ustaw adres DO TX */
+                nrf24l01p_set_address(NRF_ADDR_LIST[current_thermostat]);
+
                 nrf24l01p_switch_rx_to_tx();
                 nrf_ts = sys_ms;
                 nrf_state = NRF_WAIT_BEFORE_TX;
@@ -386,6 +248,15 @@ static void nrf_fsm(void)
             if ((sys_ms - nrf_ts) >= 50)
             {
                 nrf24l01p_switch_tx_to_rx();
+
+                /* zapamiętaj, od kogo oczekujemy RX */
+                rx_thermostat = current_thermostat;
+
+                /* przygotuj indeks NA NASTĘPNY CYKL */
+                current_thermostat++;
+                if (current_thermostat >= NRF_TH_COUNT)
+                    current_thermostat = 0;
+
                 nrf_state = NRF_IDLE;
             }
             break;
@@ -401,9 +272,9 @@ void cycle(void)
     process_uart();
     process_timers();
 
-    heat();        /* cała logika grzania */
+    heat();
 
-    nrf_fsm();     /* NRF bez HAL_Delay */
+    nrf_fsm();
 
     if (uart_tx_flag)
     {
@@ -414,14 +285,16 @@ void cycle(void)
     if (nrf_rx_flag)
     {
         nrf24l01p_rx_receive(rx_data);
-        if (rx_data[0] == 7 && rx_data[1] == 7)
-        {
 
+        if (!(rx_data[0] == 7 && rx_data[1] == 7))
+        {
+            switch (rx_thermostat)
+            {
+                case 0: t_room1 = rx_data[0]; t_set1 = rx_data[2]; break;
+                case 1: t_room2 = rx_data[0]; t_set2 = rx_data[2]; break;
+                case 2: t_room3 = rx_data[0]; t_set3 = rx_data[2]; break;
+            }
         }
-        else {
-            t_room1 = rx_data[0];
-            t_set1 = rx_data[2];
-		}
 
         nrf_rx_flag = 0;
     }

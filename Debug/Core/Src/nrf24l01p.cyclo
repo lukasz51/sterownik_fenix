@@ -22,3 +22,4 @@
 ../Core/Src/nrf24l01p.c:263:6:nrf24l01p_rx_receive	1
 ../Core/Src/nrf24l01p.c:282:6:nrf24l01p_switch_rx_to_tx	1
 ../Core/Src/nrf24l01p.c:305:6:nrf24l01p_switch_tx_to_rx	1
+../Core/Src/nrf24l01p.c:327:6:nrf24l01p_set_address	1

@@ -324,3 +324,9 @@ void nrf24l01p_switch_tx_to_rx(void)
     ce_high();
 }
 
+void nrf24l01p_set_address(const uint8_t *addr)
+{
+    write_address(NRF24L01P_REG_TX_ADDR,    addr, 5);
+    write_address(NRF24L01P_REG_RX_ADDR_P0, addr, 5);
+}
+
