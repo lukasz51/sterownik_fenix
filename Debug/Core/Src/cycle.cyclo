@@ -1,1 +1,6 @@
-../Core/Src/cycle.c:360:6:cycle	83
+../Core/Src/cycle.c:83:17:adc_filter	3
+../Core/Src/cycle.c:95:13:process_adc	2
+../Core/Src/cycle.c:104:13:process_uart	39
+../Core/Src/cycle.c:288:13:process_timers	3
+../Core/Src/cycle.c:311:13:nrf_fsm	9
+../Core/Src/cycle.c:360:6:cycle	9
