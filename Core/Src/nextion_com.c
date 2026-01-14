@@ -81,11 +81,16 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
 /* =========================================================
  *                SEND TO NEXTION
  * ========================================================= */
+#define NEXTION_FIELDS 7
+
 void SendTemperatureNextion(void)
 {
     static uint8_t current_index = 0;
 
-    const char *names[7] =
+    /* normalizacja indeksu – GCC to rozumie */
+    current_index %= NEXTION_FIELDS;
+
+    static const char *names[NEXTION_FIELDS] =
     {
         "tTemp2",
         "tTemp3",
@@ -100,13 +105,11 @@ void SendTemperatureNextion(void)
 
     switch (current_index)
     {
-        /* ---- temperatury systemowe ---- */
         case 0: temp_to_send = temperature[0]; break;
         case 1: temp_to_send = temperature[1]; break;
         case 2: temp_to_send = temperature[2]; break;
         case 3: temp_to_send = temperature[3]; break;
 
-        /* ---- temperatury pokojowe ---- */
         case 4: temp_to_send = t_room1 * 10; break;
         case 5: temp_to_send = t_room2 * 10; break;
         case 6: temp_to_send = t_room3 * 10; break;
@@ -122,6 +125,4 @@ void SendTemperatureNextion(void)
         uart_tx_write(dma_buf[current_index], (uint16_t)len);
 
     current_index++;
-    if (current_index >= 7)
-        current_index = 0;
 }

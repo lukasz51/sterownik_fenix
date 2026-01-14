@@ -1,6 +1,1 @@
-../Core/Src/cycle.c:82:17:adc_filter	16	static
-../Core/Src/cycle.c:94:13:process_adc	24	static
-../Core/Src/cycle.c:103:13:process_uart	16	static
-../Core/Src/cycle.c:197:13:process_timers	4	static
-../Core/Src/cycle.c:220:13:nrf_fsm	8	static
-../Core/Src/cycle.c:269:6:cycle	8	static
+../Core/Src/cycle.c:360:6:cycle	40	static

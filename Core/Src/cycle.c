@@ -29,7 +29,8 @@ volatile uint8_t enable_room_thermostat_z1;
 volatile uint8_t enable_room_thermostat_z2;
 volatile uint8_t enable_room_thermostat_z3;
 volatile uint8_t enable_circulation = 0;
-
+extern uint32_t circulation_on_time;   // w tickach 10 s
+extern uint32_t circulation_off_time;  // w tickach 10 s
 uint8_t  boiler_cooldown_active = 0;
 uint32_t boiler_cooldown_timer  = 0;
 
@@ -108,6 +109,9 @@ static void process_uart(void)
 
     cmd[len] = 0;
 
+    /* =====================================================
+     * ALL OFF
+     * ===================================================== */
     if (!strcmp((char*)cmd, "alloffCWP"))
     {
         enable_zone1 = 0;
@@ -121,7 +125,15 @@ static void process_uart(void)
         return;
     }
 
-    if (!strcmp((char*)cmd, "cwuonCWP"))  { enable_cwu = 1; return; }
+    /* =====================================================
+     * CWU
+     * ===================================================== */
+    if (!strcmp((char*)cmd, "cwuonCWP"))
+    {
+        enable_cwu = 1;
+        return;
+    }
+
     if (!strcmp((char*)cmd, "cwuoffCWP"))
     {
         enable_cwu = 0;
@@ -139,7 +151,15 @@ static void process_uart(void)
         return;
     }
 
-    if (!strcmp((char*)cmd, "z1onCWP"))  { enable_zone1 = 1; return; }
+    /* =====================================================
+     * STREFA 1
+     * ===================================================== */
+    if (!strcmp((char*)cmd, "z1onCWP"))
+    {
+        enable_zone1 = 1;
+        return;
+    }
+
     if (!strcmp((char*)cmd, "z1offCWP"))
     {
         enable_zone1 = 0;
@@ -150,9 +170,22 @@ static void process_uart(void)
         }
         return;
     }
-    if (!strncmp((char*)cmd, "z1", 2)) { set_co1 = atoi((char*)&cmd[2]) * 10; return; }
 
-    if (!strcmp((char*)cmd, "z2onCWP"))  { enable_zone2 = 1; return; }
+    if (!strncmp((char*)cmd, "z1", 2))
+    {
+        set_co1 = atoi((char*)&cmd[2]) * 10;
+        return;
+    }
+
+    /* =====================================================
+     * STREFA 2
+     * ===================================================== */
+    if (!strcmp((char*)cmd, "z2onCWP"))
+    {
+        enable_zone2 = 1;
+        return;
+    }
+
     if (!strcmp((char*)cmd, "z2offCWP"))
     {
         enable_zone2 = 0;
@@ -163,9 +196,22 @@ static void process_uart(void)
         }
         return;
     }
-    if (!strncmp((char*)cmd, "z2", 2)) { set_co2 = atoi((char*)&cmd[2]) * 10; return; }
 
-    if (!strcmp((char*)cmd, "z3onCWP"))  { enable_zone3 = 1; return; }
+    if (!strncmp((char*)cmd, "z2", 2))
+    {
+        set_co2 = atoi((char*)&cmd[2]) * 10;
+        return;
+    }
+
+    /* =====================================================
+     * STREFA 3
+     * ===================================================== */
+    if (!strcmp((char*)cmd, "z3onCWP"))
+    {
+        enable_zone3 = 1;
+        return;
+    }
+
     if (!strcmp((char*)cmd, "z3offCWP"))
     {
         enable_zone3 = 0;
@@ -176,18 +222,63 @@ static void process_uart(void)
         }
         return;
     }
-    if (!strncmp((char*)cmd, "z3", 2)) { set_co3 = atoi((char*)&cmd[2]) * 10; return; }
 
-    if (!strcmp((char*)cmd, "coonCWP"))  { enable_circulation = 1; return; }
-    if (!strcmp((char*)cmd, "cooffCWP")) { enable_circulation = 0; return; }
+    if (!strncmp((char*)cmd, "z3", 2))
+    {
+        set_co3 = atoi((char*)&cmd[2]) * 10;
+        return;
+    }
 
+    /* =====================================================
+     * CYRKULACJA – ON / OFF
+     * ===================================================== */
+    if (!strcmp((char*)cmd, "coonCWP"))
+    {
+        enable_circulation = 1;
+        return;
+    }
+
+    if (!strcmp((char*)cmd, "cooffCWP"))
+    {
+        enable_circulation = 0;
+        return;
+    }
+
+    /* =====================================================
+     * CYRKULACJA – CZASY
+     * ===================================================== */
+
+    /* cot1CWP → czas pracy (minuty) */
+    if (!strncmp((char*)cmd, "cot1CWP", 7))
+    {
+        int minutes = atoi((char*)&cmd[7]);
+        if (minutes > 0)
+            circulation_on_time = minutes * 6;   // 1 min = 6 × 10 s
+        return;
+    }
+
+    /* cot2CWP → czas przerwy (minuty) */
+    if (!strncmp((char*)cmd, "cot2CWP", 7))
+    {
+        int minutes = atoi((char*)&cmd[7]);
+        if (minutes > 0)
+            circulation_off_time = minutes * 6;  // 1 min = 6 × 10 s
+        return;
+    }
+
+    /* =====================================================
+     * TERMOSTATY POKOJOWE
+     * ===================================================== */
     if (!strcmp((char*)cmd, "t1onCWP"))  { enable_room_thermostat_z1 = 1; return; }
     if (!strcmp((char*)cmd, "t1offCWP")) { enable_room_thermostat_z1 = 0; return; }
+
     if (!strcmp((char*)cmd, "t2onCWP"))  { enable_room_thermostat_z2 = 1; return; }
     if (!strcmp((char*)cmd, "t2offCWP")) { enable_room_thermostat_z2 = 0; return; }
+
     if (!strcmp((char*)cmd, "t3onCWP"))  { enable_room_thermostat_z3 = 1; return; }
     if (!strcmp((char*)cmd, "t3offCWP")) { enable_room_thermostat_z3 = 0; return; }
 }
+
 
 /* =========================================================
  *                TIMERY SEKUNDOWE

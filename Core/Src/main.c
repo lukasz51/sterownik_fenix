@@ -53,8 +53,6 @@
 
 /* USER CODE BEGIN PV */
 
-
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -118,7 +116,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
 
 	  cycle();
 
