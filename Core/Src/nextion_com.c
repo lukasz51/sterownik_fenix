@@ -63,6 +63,9 @@ static int build_nextion_msg(const char *comp, int temp, uint8_t *outbuf)
     for (int j = idx - 1; j >= 0 && i < NEXTION_MSG_MAX; j--)
         outbuf[i++] = numbuf[j];
 
+    if (i < NEXTION_MSG_MAX) outbuf[i++] = 0xB0;  // °
+
+    // litera C
     if (i < NEXTION_MSG_MAX) outbuf[i++] = 'C';
     if (i < NEXTION_MSG_MAX) outbuf[i++] = '"';
 
