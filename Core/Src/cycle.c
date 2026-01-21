@@ -35,7 +35,10 @@ uint8_t  boiler_cooldown_active = 0;
 uint32_t boiler_cooldown_timer  = 0;
 
 uint8_t system_ready = 1;
-
+extern volatile uint8_t mix_valve;
+extern uint8_t  seq_zone;
+extern uint32_t seq_timer;
+uint8_t zone_wants_heat(uint8_t zone);
 /* =========================================================
  *                TEMPERATURY (×10)
  * ========================================================= */
@@ -290,10 +293,37 @@ static void process_timers(void)
     if ((sys_ms - last_sec) >= 1000)
     {
         last_sec = sys_ms;
+
+        /* istniejąca logika – ZOSTAJE */
         if (boiler_cooldown_active)
             boiler_cooldown_timer++;
+
+        /* === TRYB A – sekwencyjny === */
+        if (mix_valve == 0)
+        {
+            if (!zone_wants_heat(seq_zone))
+            {
+                seq_timer = 0;
+                seq_zone++;
+                if (seq_zone > 3)
+                    seq_zone = 1;
+            }
+            else
+            {
+                seq_timer++;
+
+                if (seq_timer >= ZONE_TIME_SEC)
+                {
+                    seq_timer = 0;
+                    seq_zone++;
+                    if (seq_zone > 3)
+                        seq_zone = 1;
+                }
+            }
+        }
     }
 }
+
 
 /* =========================================================
  *                NRF FSM (NIEBLOKUJĄCY)

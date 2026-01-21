@@ -1,7 +1,9 @@
-../Core/Src/heat.c:86:16:room_thermostat_allows	9
-../Core/Src/heat.c:113:13:start_zone_cooldown	3
-../Core/Src/heat.c:124:13:logic_cwu	6
-../Core/Src/heat.c:144:13:logic_circulation	11
-../Core/Src/heat.c:206:13:logic_pumps	17
-../Core/Src/heat.c:247:13:logic_boiler	26
-../Core/Src/heat.c:314:6:heat	2
+../Core/Src/heat.c:96:16:room_thermostat_allows	9
+../Core/Src/heat.c:120:9:zone_wants_heat	4
+../Core/Src/heat.c:137:13:start_zone_cooldown	3
+../Core/Src/heat.c:148:13:logic_cwu	6
+../Core/Src/heat.c:168:13:logic_circulation	11
+../Core/Src/heat.c:230:13:logic_pumps	21
+../Core/Src/heat.c:278:13:logic_boiler	26
+../Core/Src/heat.c:342:13:logic_boiler_sequential	7
+../Core/Src/heat.c:361:6:heat	3

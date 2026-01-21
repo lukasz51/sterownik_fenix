@@ -6,4 +6,6 @@
  * ========================================================= */
 void heat(void);
 
+
+#define ZONE_TIME_SEC 900
 #endif /* HEAT_H */

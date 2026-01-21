@@ -12,11 +12,21 @@
 #define CIRCULATION_MIN_TEMP_OFF  340   // 34.0°C
 
 /* =========================================================
+ *                TRYB SEKWENCYJNY (A)
+ * ========================================================= */
+volatile uint8_t mix_valve = 1;   // 1 = normalny (domyślnie), 0 = sekwencyjny
+uint8_t  seq_zone  = 1;
+uint32_t seq_timer = 0;
+
+#define ZONE_TIME_SEC 900   // 15 minut
+
+
+/* =========================================================
  *                NASTAWY CO (×10)
  * ========================================================= */
-int set_co1  = 650, hyst_co1 = 20;
-int set_co2  = 600, hyst_co2 = 20;
-int set_co3  = 550, hyst_co3 = 20;
+int set_co1  = 200, hyst_co1 = 20;
+int set_co2  = 200, hyst_co2 = 20;
+int set_co3  = 200, hyst_co3 = 20;
 
 /* =========================================================
  *                NASTAWY CWU (×10)
@@ -107,6 +117,20 @@ static uint8_t room_thermostat_allows(uint8_t zone)
     return allow[zone];
 }
 
+uint8_t zone_wants_heat(uint8_t zone)
+{
+    uint8_t enable;
+
+    if (zone == 1) enable = enable_room_thermostat_z1;
+    else if (zone == 2) enable = enable_room_thermostat_z2;
+    else enable = enable_room_thermostat_z3;
+
+    /* termostat wyłączony → zawsze grzejemy */
+    if (!enable)
+        return 1;
+
+    return room_thermostat_allows(zone);
+}
 /* =========================================================
  *                START COOLDOWNU
  * ========================================================= */
@@ -205,6 +229,9 @@ static void logic_circulation(void)
  * ========================================================= */
 static void logic_pumps(void)
 {
+    /* =====================================================
+     * PRIORYTET CWU
+     * ===================================================== */
     if (heating_cwu)
     {
         relay2(0);
@@ -213,32 +240,36 @@ static void logic_pumps(void)
         return;
     }
 
-    if (zone_cooldown_active[1] &&
-        zone_cooldown_timer[1] >= BOILER_COOLDOWN_TIME)
+    /* =====================================================
+     * OBSŁUGA COOLDOWNÓW (ZOSTAJE)
+     * ===================================================== */
+    for (uint8_t z = 1; z <= 3; z++)
     {
-        zone_cooldown_active[1] = 0;
-        zone_cooldown_timer[1]  = 0;
+        if (zone_cooldown_active[z] &&
+            zone_cooldown_timer[z] >= BOILER_COOLDOWN_TIME)
+        {
+            zone_cooldown_active[z] = 0;
+            zone_cooldown_timer[z]  = 0;
+        }
     }
 
-    relay2((enable_zone1 && boiler_mode == BOILER_CO1) || zone_cooldown_active[1]);
-
-    if (zone_cooldown_active[2] &&
-        zone_cooldown_timer[2] >= BOILER_COOLDOWN_TIME)
+    /* =====================================================
+     * TRYB A – SEKWENCYJNY (mix_valve == 0)
+     * ===================================================== */
+    if (mix_valve == 0)
     {
-        zone_cooldown_active[2] = 0;
-        zone_cooldown_timer[2]  = 0;
+        relay2((seq_zone == 1) || zone_cooldown_active[1]);
+        relay4((seq_zone == 2) || zone_cooldown_active[2]);
+        relay5((seq_zone == 3) || zone_cooldown_active[3]);
+        return;
     }
 
-    relay4((enable_zone2 && boiler_mode == BOILER_CO2) || zone_cooldown_active[2]);
-
-    if (zone_cooldown_active[3] &&
-        zone_cooldown_timer[3] >= BOILER_COOLDOWN_TIME)
-    {
-        zone_cooldown_active[3] = 0;
-        zone_cooldown_timer[3]  = 0;
-    }
-
-    relay5((enable_zone3 && boiler_mode == BOILER_CO3) || zone_cooldown_active[3]);
+    /* =====================================================
+     * TRYB B – NORMALNY (mix_valve == 1)
+     * ===================================================== */
+    relay2((enable_zone1 && room_thermostat_allows(1)) || zone_cooldown_active[1]);
+    relay4((enable_zone2 && room_thermostat_allows(2)) || zone_cooldown_active[2]);
+    relay5((enable_zone3 && room_thermostat_allows(3)) || zone_cooldown_active[3]);
 }
 
 /* =========================================================
@@ -308,14 +339,35 @@ static void logic_boiler(void)
     relay1(0);
 }
 
+static void logic_boiler_sequential(void)
+{
+    boiler_mode = BOILER_CO1 + (seq_zone - 1);
+
+    int set = (seq_zone == 1) ? set_co1 :
+              (seq_zone == 2) ? set_co2 :
+                                set_co3;
+
+    if (boiler_on && temperature[0] >= set)
+        boiler_on = 0;
+    else if (!boiler_on && temperature[0] <= (set - hyst_co1))
+        boiler_on = 1;
+
+    relay1(boiler_on);
+}
+
 /* =========================================================
  *                API
  * ========================================================= */
 void heat(void)
 {
-    logic_cwu();
-    logic_boiler();
-    logic_pumps();
+	logic_cwu();
+
+	if (mix_valve == 0)
+	    logic_boiler_sequential();
+	else
+	    logic_boiler();
+
+	logic_pumps();
 
     if (circulation_tick_10s)
     {
